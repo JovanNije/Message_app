@@ -96,7 +96,7 @@ void _login() async {
             children: [
               // App Title
               const Text(
-                'Welcome Back!',
+                'Welcome!',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
