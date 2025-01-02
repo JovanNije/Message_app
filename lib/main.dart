@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'LoginScreen.dart';
-import 'ChatScreen.dart';
-import 'firebase_options.dart';
+import 'app.dart';
 import 'package:firebase_database/firebase_database.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +31,7 @@ class MyApp extends StatelessWidget {
 }
 
 class GestureDetector extends StatefulWidget {
-  const GestureDetector({ Key? key }) : super(key: key);
+  const GestureDetector({ super.key });
 
   @override
   _GestureDetectorState createState() => _GestureDetectorState();
