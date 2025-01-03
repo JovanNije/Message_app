@@ -5,3 +5,4 @@ export 'screens/LoginScreen.dart';
 export 'FireBase/firebase_options.dart';
 //widgets
 export 'Widgets/MessageBubble.dart';
+export 'Widgets/AuthCheck.dart';

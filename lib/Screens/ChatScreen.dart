@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:messeging_app/app.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -19,26 +21,32 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isTyping = false;
   String _typingUser = '';
+  String get email => widget.email;
+  String get username => widget.username;
 
   late DatabaseReference _messagesRef;
 
-  String getUsername() {
-    if (widget.username == 'User') {
-      return widget.email.split('@')[0];
-    } else {
-      return widget.username;
-    }
-  }
-
+  // Initialize Firebase and check if the user is logged in on app start
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
     _messagesRef = FirebaseDatabase.instance.ref('messages');
+    _checkSession();
     // Initial scroll to the bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
+  }
+
+  void _checkSession() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    
+    // If the session is not valid, navigate back to the LoginScreen
+    if (!isLoggedIn) {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   void _onFocusChange() {
@@ -51,10 +59,11 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _scrollToBottom() {
-    // Scroll to the bottom after a message is sent or the list is updated
-    if (_scrollController.hasClients) {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+  String getUsername() {
+    if (widget.username == 'User') {
+      return widget.email.split('@')[0];
+    } else {
+      return widget.username;
     }
   }
 
@@ -77,6 +86,31 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom();
     }
   }
+
+  // Scroll to the bottom of the chat
+  void _scrollToBottom() {
+    // Scroll to the bottom after a message is sent or the list is updated
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    }
+  }
+
+Future<void> _logout() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('isLoggedIn', false);  // Clear the login status
+  await prefs.remove('email'); // Optionally clear the email and username
+  await prefs.remove('username'); // Optionally clear the username
+
+  // Sign out the user
+  await FirebaseAuth.instance.signOut();
+
+  // Navigate back to login screen
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => LoginScreen()),  // Use the direct screen route
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +140,12 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: _logout, // Logout on tap
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -152,9 +192,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   });
 
                   return ListView(
-                    children: messageWidgets,
                     controller: _scrollController,
                     reverse: false,
+                    children: messageWidgets,
                   );
                 },
               ),

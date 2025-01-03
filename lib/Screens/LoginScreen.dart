@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
-import '../FireBase/firebase_options.dart'; // Import firebase_options.dart for Firebase configuration
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
 import 'package:messeging_app/app.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -22,19 +22,39 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _initializeFirebase();
+    _checkSession();
   }
 
+  // Initialize Firebase
   void _initializeFirebase() async {
     try {
-      // Initialize Firebase with the options from firebase_options.dart
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      await Firebase.initializeApp();
     } catch (e) {
       print("Firebase initialization failed: $e");
-      // Handle initialization error
     }
   }
+
+// Check if the user is already logged in
+void _checkSession() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+  if (isLoggedIn) {
+    // Retrieve the email and username from SharedPreferences
+    String email = prefs.getString('email') ?? '';
+    String username = prefs.getString('username') ?? 'User';
+
+    // If the user is logged in, navigate directly to the ChatScreen with email and username
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          email: email,       // Pass the email
+          username: username, // Pass the username
+        ),
+      ),
+    );
+  }
+}
 
 void _login() async {
   setState(() {
@@ -52,12 +72,18 @@ void _login() async {
     final user = userCredential.user;
     String username = user?.displayName ?? 'User'; // If displayName is empty, use 'User'
 
+    // Store email and username in SharedPreferences after login
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);  // Set login status
+    await prefs.setString('email', user!.email!);    // Save email
+    await prefs.setString('username', username); // Save username
+
     // Pass the email and username to ChatScreen
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => ChatScreen(
-          email: user!.email!, // Pass the email
-          username: username, // Pass the username, or 'User' if not set
+          email: user.email!, // Pass the email
+          username: username, // Pass the username
         ),
       ),
     );
@@ -84,6 +110,7 @@ void _login() async {
   }
 }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,7 +121,6 @@ void _login() async {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // App Title
               const Text(
                 'Welcome!',
                 style: TextStyle(
@@ -104,16 +130,14 @@ void _login() async {
                 ),
               ),
               const SizedBox(height: 30),
-
-              // Email TextField
               SizedBox(
-                width: 300, // Set a specific width for input fields
+                width: 300,
                 child: TextField(
                   controller: _emailController,
                   decoration: InputDecoration(
                     labelText: 'Email',
                     filled: true,
-                    fillColor: const Color(0xFFFAFAFA), // Input Field Background
+                    fillColor: const Color(0xFFFAFAFA),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: Color.fromARGB(255, 231, 92, 87)),
@@ -122,17 +146,15 @@ void _login() async {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Password TextField
               SizedBox(
-                width: 300, // Set a specific width for input fields
+                width: 300,
                 child: TextField(
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: 'Password',
                     filled: true,
-                    fillColor: const Color(0xFFFAFAFA), // Input Field Background
+                    fillColor: const Color(0xFFFAFAFA),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: Color.fromARGB(255, 231, 92, 87)),
@@ -141,14 +163,12 @@ void _login() async {
                 ),
               ),
               const SizedBox(height: 30),
-
-              // Login Button
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                       onPressed: _login,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 231, 92, 87), // Custom Red
+                        backgroundColor: const Color.fromARGB(255, 231, 92, 87),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -157,24 +177,21 @@ void _login() async {
                       child: const Text(
                         'Log In',
                         style: TextStyle(
-                          color: Colors.white, // Button Text
+                          color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
               const SizedBox(height: 20),
-
-              // Register Link
               GestureDetector(
                 onTap: () {
-                  // Navigate to Register Screen
                   Navigator.of(context).pushReplacementNamed('/register');
                 },
                 child: const Text(
                   "Don't have an account? Sign up",
                   style: TextStyle(
-                    color: Color.fromARGB(255, 231, 92, 87), // Custom Red
+                    color: Color.fromARGB(255, 231, 92, 87),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
